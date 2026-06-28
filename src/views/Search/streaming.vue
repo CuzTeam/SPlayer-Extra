@@ -2,13 +2,13 @@
   <div class="search-type">
     <Transition name="fade" mode="out-in">
       <!-- 加载中 -->
-      <div v-if="loading" class="loading-wrap">
+      <div v-if="loading" key="loading" class="loading-wrap">
         <n-spin size="large" />
       </div>
       <!-- 搜索结果 -->
-      <template v-else-if="hasResults">
+      <div v-else-if="hasResults" key="results" class="results-wrap">
         <!-- 多种结果：显示 sub-tab -->
-        <template v-if="resultTypeCount > 1">
+        <div v-if="resultTypeCount > 1" class="multi-result">
           <n-tabs v-model:value="subTab" class="sub-tabs" type="segment" size="small">
             <n-tab v-if="result.songs.length > 0" name="songs">
               单曲 ({{ result.songs.length }})
@@ -44,36 +44,35 @@
               </div>
             </div>
           </div>
-        </template>
+        </div>
         <!-- 单种结果：直接渲染 -->
-        <template v-else>
-          <SongList
-            v-if="result.songs.length > 0"
-            :data="result.songs"
-            doubleClickAction="add"
-            disabledSort
-          />
-          <div v-else-if="result.artists.length > 0" class="card-grid">
-            <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
-              <s-image :src="artist.cover" :size="80" round />
-              <n-text class="name" depth="2">{{ artist.name }}</n-text>
-              <n-text v-if="artist.albumCount" class="sub" depth="3">
-                {{ artist.albumCount }} 张专辑
-              </n-text>
-            </div>
+        <SongList
+          v-else-if="result.songs.length > 0"
+          :data="result.songs"
+          doubleClickAction="add"
+          disabledSort
+        />
+        <div v-else-if="result.artists.length > 0" class="card-grid single">
+          <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
+            <s-image :src="artist.cover" :size="80" round />
+            <n-text class="name" depth="2">{{ artist.name }}</n-text>
+            <n-text v-if="artist.albumCount" class="sub" depth="3">
+              {{ artist.albumCount }} 张专辑
+            </n-text>
           </div>
-          <div v-else-if="result.albums.length > 0" class="card-grid">
-            <div v-for="album in result.albums" :key="album.id" class="album-card">
-              <s-image :src="album.cover" :size="120" class="cover" />
-              <n-text class="name" depth="2">{{ album.name }}</n-text>
-              <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
-            </div>
+        </div>
+        <div v-else-if="result.albums.length > 0" class="card-grid single">
+          <div v-for="album in result.albums" :key="album.id" class="album-card">
+            <s-image :src="album.cover" :size="120" class="cover" />
+            <n-text class="name" depth="2">{{ album.name }}</n-text>
+            <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
           </div>
-        </template>
-      </template>
+        </div>
+      </div>
       <!-- 无结果 -->
       <n-empty
         v-else
+        key="empty"
         :description="error || `很抱歉，未能找到与 ${keyword} 相关的任何内容`"
         style="margin-top: 60px"
         size="large"
@@ -188,16 +187,23 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
 <style lang="scss" scoped>
 .search-type {
   height: 100%;
-  display: flex;
-  flex-direction: column;
   .loading-wrap {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 200px;
   }
+  .results-wrap {
+    height: 100%;
+  }
+  .multi-result {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
   .sub-tabs {
     flex-shrink: 0;
+    margin-top: 4px;
     margin-bottom: 12px;
   }
   .tab-content {
@@ -209,8 +215,10 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 16px;
     overflow-y: auto;
-    height: 100%;
     padding-bottom: 24px;
+    &.single {
+      height: 100%;
+    }
   }
   .artist-card {
     display: flex;

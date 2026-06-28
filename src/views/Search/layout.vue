@@ -121,6 +121,7 @@ watch(
     }
   }
   .tabs {
+    margin-bottom: 12px;
     :deep(.n-tabs-nav) {
       overflow-x: auto;
       scrollbar-width: none;
