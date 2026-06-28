@@ -12,6 +12,13 @@
       <n-tab name="search-albums"> 专辑 </n-tab>
       <n-tab name="search-videos"> 视频 </n-tab>
       <n-tab name="search-radios"> 播客 </n-tab>
+      <n-tab
+        v-for="server in searchableServers"
+        :key="server.id"
+        :name="`search-streaming-${server.id}`"
+      >
+        {{ server.name }}
+      </n-tab>
     </n-tabs>
     <!-- 路由 -->
     <RouterView v-slot="{ Component }">
@@ -37,10 +44,11 @@
 </template>
 
 <script setup lang="ts">
-import { useSettingStore } from "@/stores";
+import { useSettingStore, useStreamingStore } from "@/stores";
 const route = useRoute();
 const router = useRouter();
 const settingStore = useSettingStore();
+const streamingStore = useStreamingStore();
 
 // 搜索关键词
 const searchKeyword = computed(() => route.query.keyword as string);
@@ -48,8 +56,29 @@ const searchKeyword = computed(() => route.query.keyword as string);
 // 搜索分类
 const searchType = ref<string>("search-songs");
 
+// 可搜索的流媒体服务器
+const searchableServers = computed(() => {
+  if (!settingStore.streamingEnabled) return [];
+  return streamingStore.servers.value.filter((s) => {
+    if (s.type === "jellyfin" || s.type === "emby") {
+      return !!s.accessToken && !!s.userId;
+    }
+    return true;
+  });
+});
+
 // Tabs 改变
 const tabChange = (value: string) => {
+  // 流媒体 Tab
+  if (value.startsWith("search-streaming-")) {
+    const serverId = value.replace("search-streaming-", "");
+    router.push({
+      name: "search-streaming",
+      params: { serverId },
+      query: { keyword: searchKeyword.value },
+    });
+    return;
+  }
   router.push({
     name: value,
     query: {
@@ -62,7 +91,9 @@ const tabChange = (value: string) => {
 watch(
   () => route.name,
   (name) => {
-    if (name && name.toString().startsWith("search-")) {
+    if (name === "search-streaming") {
+      searchType.value = `search-streaming-${route.params.serverId}`;
+    } else if (name && name.toString().startsWith("search-")) {
       searchType.value = name as string;
     }
   },
@@ -87,6 +118,21 @@ watch(
     }
     .n-text {
       display: inline-block;
+    }
+  }
+  .tabs {
+    :deep(.n-tabs-nav) {
+      overflow-x: auto;
+      scrollbar-width: none;
+      &::-webkit-scrollbar {
+        display: none;
+      }
+    }
+    :deep(.n-tabs-rail) {
+      min-width: max-content;
+    }
+    :deep(.n-tab) {
+      flex-shrink: 0;
     }
   }
   .router-view {

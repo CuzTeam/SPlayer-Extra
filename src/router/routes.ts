@@ -53,6 +53,11 @@ const appRoutes: Array<RouteRecordRaw> = [
         name: "search-radios",
         component: () => import("@/views/Search/radios.vue"),
       },
+      {
+        path: "streaming/:serverId",
+        name: "search-streaming",
+        component: () => import("@/views/Search/streaming.vue"),
+      },
     ],
   },
   // 发现
