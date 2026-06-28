@@ -6,38 +6,46 @@
         <n-spin size="large" />
       </div>
       <!-- 搜索结果 -->
-      <div v-else-if="hasResults" class="streaming-results">
-        <!-- 歌手横滑行 -->
-        <div v-if="result.artists.length > 0" class="h-section">
-          <n-text class="h-title">歌手 ({{ result.artists.length }})</n-text>
-          <n-scrollbar x-scrollable class="h-scroll">
-            <div class="h-row">
-              <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
-                <s-image :src="artist.cover" :size="56" round />
-                <n-text class="name" depth="2">{{ artist.name }}</n-text>
-              </div>
+      <template v-else-if="hasResults">
+        <n-tabs v-model:value="subTab" class="sub-tabs" type="segment" size="small">
+          <n-tab v-if="result.songs.length > 0" name="songs">
+            单曲 ({{ result.songs.length }})
+          </n-tab>
+          <n-tab v-if="result.artists.length > 0" name="artists">
+            歌手 ({{ result.artists.length }})
+          </n-tab>
+          <n-tab v-if="result.albums.length > 0" name="albums">
+            专辑 ({{ result.albums.length }})
+          </n-tab>
+        </n-tabs>
+        <div class="tab-content">
+          <!-- 单曲 -->
+          <SongList
+            v-if="subTab === 'songs' && result.songs.length > 0"
+            :data="result.songs"
+            doubleClickAction="add"
+            disabledSort
+          />
+          <!-- 歌手 -->
+          <div v-else-if="subTab === 'artists'" class="card-grid">
+            <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
+              <s-image :src="artist.cover" :size="80" round />
+              <n-text class="name" depth="2">{{ artist.name }}</n-text>
+              <n-text v-if="artist.albumCount" class="sub" depth="3">
+                {{ artist.albumCount }} 张专辑
+              </n-text>
             </div>
-          </n-scrollbar>
-        </div>
-        <!-- 专辑横滑行 -->
-        <div v-if="result.albums.length > 0" class="h-section">
-          <n-text class="h-title">专辑 ({{ result.albums.length }})</n-text>
-          <n-scrollbar x-scrollable class="h-scroll">
-            <div class="h-row">
-              <div v-for="album in result.albums" :key="album.id" class="album-card">
-                <s-image :src="album.cover" :size="80" class="cover" />
-                <n-text class="name" depth="2">{{ album.name }}</n-text>
-                <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
-              </div>
+          </div>
+          <!-- 专辑 -->
+          <div v-else-if="subTab === 'albums'" class="card-grid">
+            <div v-for="album in result.albums" :key="album.id" class="album-card">
+              <s-image :src="album.cover" :size="120" class="cover" />
+              <n-text class="name" depth="2">{{ album.name }}</n-text>
+              <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
             </div>
-          </n-scrollbar>
+          </div>
         </div>
-        <!-- 单曲列表 -->
-        <div v-if="result.songs.length > 0" class="song-section">
-          <n-text class="h-title">单曲 ({{ result.songs.length }})</n-text>
-          <SongList :data="result.songs" doubleClickAction="add" disabledSort />
-        </div>
-      </div>
+      </template>
       <!-- 无结果 -->
       <n-empty
         v-else
@@ -76,6 +84,9 @@ const props = defineProps<{
 const route = useRoute();
 const streamingStore = useStreamingStore();
 
+// 子标签
+const subTab = ref("songs");
+
 // 搜索结果
 const loading = ref(true);
 const error = ref("");
@@ -92,6 +103,13 @@ const hasResults = computed(
     result.value.artists.length > 0 ||
     result.value.albums.length > 0,
 );
+
+// 选择首个有结果的标签
+const pickFirstAvailable = () => {
+  if (result.value.songs.length > 0) subTab.value = "songs";
+  else if (result.value.artists.length > 0) subTab.value = "artists";
+  else if (result.value.albums.length > 0) subTab.value = "albums";
+};
 
 // 获取服务器配置
 const getServer = (): StreamingServerConfig | null => {
@@ -122,6 +140,7 @@ const doSearch = async () => {
       res = await subsonic.search(server, props.keyword);
     }
     result.value = res;
+    pickFirstAvailable();
   } catch (err) {
     error.value = err instanceof Error ? err.message : "搜索失败，请检查服务器连接";
   } finally {
@@ -144,59 +163,66 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
     align-items: center;
     height: 200px;
   }
-  .streaming-results {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
+  .sub-tabs {
+    flex-shrink: 0;
+    margin-bottom: 12px;
+  }
+  .tab-content {
+    flex: 1;
     overflow: hidden;
   }
-  .h-section {
-    flex-shrink: 0;
-    padding: 0 0 12px;
-  }
-  .h-title {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 8px;
-    display: block;
-  }
-  .h-scroll {
-    :deep(.n-scrollbar-content) {
-      padding: 4px 0;
-    }
-  }
-  .h-row {
-    display: flex;
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
     gap: 16px;
+    overflow-y: auto;
+    height: 100%;
+    padding-bottom: 24px;
   }
   .artist-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
-    width: 72px;
-    flex-shrink: 0;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background-color 0.2s;
+    cursor: default;
+    &:hover {
+      background-color: var(--n-color-hover);
+    }
     .name {
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 500;
       text-align: center;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+    .sub {
+      font-size: 12px;
+    }
   }
   .album-card {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    width: 96px;
-    flex-shrink: 0;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 12px;
+    transition: background-color 0.2s;
+    cursor: default;
+    &:hover {
+      background-color: var(--n-color-hover);
+    }
     .cover {
+      flex-shrink: 0;
       border-radius: 8px;
       overflow: hidden;
     }
     .name {
-      font-size: 13px;
+      font-size: 14px;
+      font-weight: 500;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -209,12 +235,6 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-  }
-  .song-section {
-    flex: 1;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
   }
 }
 </style>
