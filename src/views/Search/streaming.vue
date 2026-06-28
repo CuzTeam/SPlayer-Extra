@@ -7,27 +7,53 @@
       </div>
       <!-- 搜索结果 -->
       <template v-else-if="hasResults">
-        <n-tabs v-model:value="subTab" class="sub-tabs" type="segment" size="small">
-          <n-tab v-if="result.songs.length > 0" name="songs">
-            单曲 ({{ result.songs.length }})
-          </n-tab>
-          <n-tab v-if="result.artists.length > 0" name="artists">
-            歌手 ({{ result.artists.length }})
-          </n-tab>
-          <n-tab v-if="result.albums.length > 0" name="albums">
-            专辑 ({{ result.albums.length }})
-          </n-tab>
-        </n-tabs>
-        <div class="tab-content">
-          <!-- 单曲 -->
+        <!-- 多种结果：显示 sub-tab -->
+        <template v-if="resultTypeCount > 1">
+          <n-tabs v-model:value="subTab" class="sub-tabs" type="segment" size="small">
+            <n-tab v-if="result.songs.length > 0" name="songs">
+              单曲 ({{ result.songs.length }})
+            </n-tab>
+            <n-tab v-if="result.artists.length > 0" name="artists">
+              歌手 ({{ result.artists.length }})
+            </n-tab>
+            <n-tab v-if="result.albums.length > 0" name="albums">
+              专辑 ({{ result.albums.length }})
+            </n-tab>
+          </n-tabs>
+          <div class="tab-content">
+            <SongList
+              v-if="subTab === 'songs'"
+              :data="result.songs"
+              doubleClickAction="add"
+              disabledSort
+            />
+            <div v-else-if="subTab === 'artists'" class="card-grid">
+              <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
+                <s-image :src="artist.cover" :size="80" round />
+                <n-text class="name" depth="2">{{ artist.name }}</n-text>
+                <n-text v-if="artist.albumCount" class="sub" depth="3">
+                  {{ artist.albumCount }} 张专辑
+                </n-text>
+              </div>
+            </div>
+            <div v-else-if="subTab === 'albums'" class="card-grid">
+              <div v-for="album in result.albums" :key="album.id" class="album-card">
+                <s-image :src="album.cover" :size="120" class="cover" />
+                <n-text class="name" depth="2">{{ album.name }}</n-text>
+                <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
+              </div>
+            </div>
+          </div>
+        </template>
+        <!-- 单种结果：直接渲染 -->
+        <template v-else>
           <SongList
-            v-if="subTab === 'songs' && result.songs.length > 0"
+            v-if="result.songs.length > 0"
             :data="result.songs"
             doubleClickAction="add"
             disabledSort
           />
-          <!-- 歌手 -->
-          <div v-else-if="subTab === 'artists'" class="card-grid">
+          <div v-else-if="result.artists.length > 0" class="card-grid">
             <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
               <s-image :src="artist.cover" :size="80" round />
               <n-text class="name" depth="2">{{ artist.name }}</n-text>
@@ -36,15 +62,14 @@
               </n-text>
             </div>
           </div>
-          <!-- 专辑 -->
-          <div v-else-if="subTab === 'albums'" class="card-grid">
+          <div v-else-if="result.albums.length > 0" class="card-grid">
             <div v-for="album in result.albums" :key="album.id" class="album-card">
               <s-image :src="album.cover" :size="120" class="cover" />
               <n-text class="name" depth="2">{{ album.name }}</n-text>
               <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
             </div>
           </div>
-        </div>
+        </template>
       </template>
       <!-- 无结果 -->
       <n-empty
@@ -102,6 +127,14 @@ const hasResults = computed(
     result.value.songs.length > 0 ||
     result.value.artists.length > 0 ||
     result.value.albums.length > 0,
+);
+
+// 有结果的数量
+const resultTypeCount = computed(
+  () =>
+    (result.value.songs.length > 0 ? 1 : 0) +
+    (result.value.artists.length > 0 ? 1 : 0) +
+    (result.value.albums.length > 0 ? 1 : 0),
 );
 
 // 选择首个有结果的标签
