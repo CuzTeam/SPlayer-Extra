@@ -7,36 +7,35 @@
       </div>
       <!-- 搜索结果 -->
       <div v-else-if="hasResults" class="streaming-results">
-        <!-- 单曲 -->
-        <div v-if="result.songs.length > 0" class="section">
-          <n-text class="section-title">单曲 ({{ result.songs.length }})</n-text>
+        <!-- 歌手横滑行 -->
+        <div v-if="result.artists.length > 0" class="h-section">
+          <n-text class="h-title">歌手 ({{ result.artists.length }})</n-text>
+          <n-scrollbar x-scrollable class="h-scroll">
+            <div class="h-row">
+              <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
+                <s-image :src="artist.cover" :size="56" round />
+                <n-text class="name" depth="2">{{ artist.name }}</n-text>
+              </div>
+            </div>
+          </n-scrollbar>
+        </div>
+        <!-- 专辑横滑行 -->
+        <div v-if="result.albums.length > 0" class="h-section">
+          <n-text class="h-title">专辑 ({{ result.albums.length }})</n-text>
+          <n-scrollbar x-scrollable class="h-scroll">
+            <div class="h-row">
+              <div v-for="album in result.albums" :key="album.id" class="album-card">
+                <s-image :src="album.cover" :size="80" class="cover" />
+                <n-text class="name" depth="2">{{ album.name }}</n-text>
+                <n-text v-if="album.artist" class="sub" depth="3">{{ album.artist }}</n-text>
+              </div>
+            </div>
+          </n-scrollbar>
+        </div>
+        <!-- 单曲列表 -->
+        <div v-if="result.songs.length > 0" class="song-section">
+          <n-text class="h-title">单曲 ({{ result.songs.length }})</n-text>
           <SongList :data="result.songs" doubleClickAction="add" disabledSort />
-        </div>
-        <!-- 歌手 -->
-        <div v-if="result.artists.length > 0" class="section">
-          <n-text class="section-title">歌手 ({{ result.artists.length }})</n-text>
-          <div class="card-grid">
-            <div v-for="artist in result.artists" :key="artist.id" class="artist-card">
-              <s-image :src="artist.cover" :size="80" round class="artist-cover" />
-              <n-text class="artist-name" depth="2">{{ artist.name }}</n-text>
-              <n-text v-if="artist.albumCount" class="artist-sub" depth="3">
-                {{ artist.albumCount }} 张专辑
-              </n-text>
-            </div>
-          </div>
-        </div>
-        <!-- 专辑 -->
-        <div v-if="result.albums.length > 0" class="section">
-          <n-text class="section-title">专辑 ({{ result.albums.length }})</n-text>
-          <div class="card-grid">
-            <div v-for="album in result.albums" :key="album.id" class="album-card">
-              <s-image :src="album.cover" :size="120" class="album-cover" />
-              <n-text class="album-name" depth="2">{{ album.name }}</n-text>
-              <n-text v-if="album.artist" class="album-artist" depth="3">
-                {{ album.artist }}
-              </n-text>
-            </div>
-          </div>
         </div>
       </div>
       <!-- 无结果 -->
@@ -137,7 +136,8 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
 <style lang="scss" scoped>
 .search-type {
   height: 100%;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   .loading-wrap {
     display: flex;
     justify-content: center;
@@ -147,82 +147,74 @@ watch([() => props.keyword, () => route.params.serverId], () => doSearch(), { im
   .streaming-results {
     display: flex;
     flex-direction: column;
-    gap: 24px;
-    padding-bottom: 24px;
+    height: 100%;
+    overflow: hidden;
   }
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    .section-title {
-      font-size: 18px;
-      font-weight: bold;
+  .h-section {
+    flex-shrink: 0;
+    padding: 0 0 12px;
+  }
+  .h-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 8px;
+    display: block;
+  }
+  .h-scroll {
+    :deep(.n-scrollbar-content) {
+      padding: 4px 0;
     }
   }
-  .card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  .h-row {
+    display: flex;
     gap: 16px;
   }
   .artist-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 12px;
-    transition: background-color 0.2s;
-    cursor: default;
-    &:hover {
-      background-color: var(--n-color-hover);
-    }
-    .artist-cover {
-      flex-shrink: 0;
-    }
-    .artist-name {
-      font-size: 14px;
-      font-weight: 500;
+    gap: 6px;
+    width: 72px;
+    flex-shrink: 0;
+    .name {
+      font-size: 13px;
       text-align: center;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .artist-sub {
-      font-size: 12px;
-    }
   }
   .album-card {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    border-radius: 12px;
-    transition: background-color 0.2s;
-    cursor: default;
-    &:hover {
-      background-color: var(--n-color-hover);
-    }
-    .album-cover {
-      flex-shrink: 0;
+    gap: 6px;
+    width: 96px;
+    flex-shrink: 0;
+    .cover {
       border-radius: 8px;
       overflow: hidden;
     }
-    .album-name {
-      font-size: 14px;
-      font-weight: 500;
+    .name {
+      font-size: 13px;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .album-artist {
+    .sub {
       font-size: 12px;
       max-width: 100%;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+  }
+  .song-section {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 }
 </style>
