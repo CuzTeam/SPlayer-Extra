@@ -10,6 +10,7 @@ import { isElectron, isMac } from "@/utils/env";
 import { getPlayerInfoObj, getPlaySongData } from "@/utils/format";
 import { handleSongQuality, shuffleArray, sleep } from "@/utils/helper";
 import lastfmScrobbler from "@/utils/lastfmScrobbler";
+import ncmScrobbler from "@/utils/ncmScrobbler";
 import { DJ_MODE_KEYWORDS } from "@/utils/meta";
 import { calculateProgress } from "@/utils/time";
 import type { LyricLine } from "@applemusic-like-lyrics/lyric";
@@ -604,6 +605,8 @@ class PlayerController {
       const durationInSeconds = song.duration > 0 ? Math.floor(song.duration / 1000) : undefined;
       lastfmScrobbler.startPlaying(name || "", artist || "", album, durationInSeconds);
     }
+    // 网易云打卡
+    ncmScrobbler.startPlaying(song);
   }
 
   /**
@@ -702,6 +705,8 @@ class PlayerController {
       // 注意：failSkipCount 的重置移至 onTimeUpdate，确保有实际进度
       // Last.fm Scrobbler
       lastfmScrobbler.resume();
+      // 网易云打卡
+      ncmScrobbler.resume();
       // IPC 通知
       playerIpc.sendPlayStatus(true);
       playerIpc.sendTaskbarState({ isPlaying: true });
@@ -721,11 +726,15 @@ class PlayerController {
       playerIpc.sendTaskbarMode("paused");
       playerIpc.sendTaskbarProgress(statusStore.progress);
       lastfmScrobbler.pause();
+      // 网易云打卡
+      ncmScrobbler.pause();
       console.log(`⏸️ [${musicStore.playSong?.id}] 歌曲暂停`);
     });
     // 拖动进度条
     audioManager.addEventListener("seeking", () => {
       useAutomixManager().resetAutomixScheduling("MONITORING");
+      // 网易云打卡
+      ncmScrobbler.onSeek();
     });
     // 播放结束
     audioManager.addEventListener("ended", () => {
@@ -733,6 +742,8 @@ class PlayerController {
       useAutomixManager().resetAutomixScheduling("IDLE");
       console.log(`⏹️ [${musicStore.playSong?.id}] 歌曲结束`);
       lastfmScrobbler.stop();
+      // 网易云打卡
+      ncmScrobbler.stop();
       // 检查定时关闭
       if (this.checkAutoClose()) return;
       // 自动播放下一首
@@ -751,6 +762,8 @@ class PlayerController {
       const currentTime = Math.floor(rawTime * 1000);
       const duration = Math.floor(audioManager.duration * 1000) || statusStore.duration;
       useAutomixManager().updateAutomixMonitoring();
+      // 网易云打卡累加播放时长
+      ncmScrobbler.tick(rawTime);
       // 计算歌词索引
       const songId = musicStore.playSong?.id;
       const offset = statusStore.getSongOffset(songId);

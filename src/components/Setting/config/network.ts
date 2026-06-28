@@ -460,6 +460,22 @@ export const useNetworkSettings = (): SettingConfig => {
         ],
       },
       {
+        title: "网易云音乐打卡",
+        show: isElectron,
+        items: [
+          {
+            key: "ncm_scrobble",
+            label: "听歌打卡",
+            type: "switch",
+            description: "模拟桌面客户端上报听歌记录（仅家宽网络有效）",
+            value: computed({
+              get: () => settingStore.scrobbleSong,
+              set: (v) => (settingStore.scrobbleSong = v),
+            }),
+          },
+        ],
+      },
+      {
         title: "Discord RPC",
         show: isElectron,
         items: [

@@ -10,6 +10,7 @@ import { toLikeSong } from "./auth";
 import { sendTaskbarCoverColor } from "./color";
 import { isElectron, isMac } from "./env";
 import { getPlayerInfoObj } from "./format";
+import ncmScrobbler from "./ncmScrobbler";
 import { openSetting, openUpdateApp } from "./modal";
 
 // 关闭更新状态
@@ -42,6 +43,10 @@ const initIpc = () => {
     // 快进 / 快退
     window.electron.ipcRenderer.on("seekForward", () => player.seekBy(5000));
     window.electron.ipcRenderer.on("seekBackward", () => player.seekBy(-5000));
+    // 退出前结算网易云打卡
+    window.electron.ipcRenderer.on("quit-flush-scrobble", () => {
+      ncmScrobbler.stop();
+    });
     // 播放模式切换
     window.electron.ipcRenderer.on("changeRepeat", (_, mode) => player.toggleRepeat(mode));
     window.electron.ipcRenderer.on("toggleShuffle", (_, mode) => player.toggleShuffle(mode));

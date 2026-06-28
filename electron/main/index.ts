@@ -146,6 +146,12 @@ class MainProcess {
       this.isQuit = true;
       setAppQuitting();
       (async () => {
+        // 通知渲染进程结算网易云打卡
+        for (const win of BrowserWindow.getAllWindows()) {
+          if (!win.isDestroyed()) win.webContents.send("quit-flush-scrobble");
+        }
+        // 等待渲染进程完成上报
+        await new Promise((resolve) => setTimeout(resolve, 800));
         // 注销全部快捷键
         unregisterShortcuts();
         // 清理媒体集成资源

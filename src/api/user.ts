@@ -115,14 +115,22 @@ export const userLike = (uid: number) => {
   });
 };
 
-// 听歌打卡
-export const scrobble = (id: number, sourceid?: number, time?: number) => {
+// 听歌打卡 V2（NCBL 加密版，仿桌面客户端）
+export const scrobbleV1 = (params: {
+  id: number;
+  time: number;
+  total?: number;
+  sourceid?: number;
+  source?: string;
+  name?: string;
+  artist?: string;
+  bitrate?: number;
+  level?: string;
+}) => {
   return request({
-    url: "/scrobble",
+    url: "/scrobble/v1",
     params: {
-      id,
-      sourceid,
-      time,
+      ...params,
       timestamp: Date.now(),
     },
   });
